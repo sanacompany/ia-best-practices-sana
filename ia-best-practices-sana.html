@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA & Best Practices — SANA</title>
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=space-grotesk@400;500;700&f[]=jet-brains-mono@400;700&display=swap">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a2e;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a0;
+            --accent-blue: #4361ee;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-orange: #ff6b35;
+            --accent-purple: #a855f7;
+            --accent-pink: #ff2d75;
+            --font-display: 'Space Grotesk', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan), var(--accent-green));
+            z-index: 1000;
+            transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Navigation Dots */
+        .nav-dots {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            opacity: 0.3;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .nav-dot.active {
+            opacity: 1;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 12px var(--accent-cyan);
+            transform: scale(1.4);
+        }
+
+        .nav-dot:hover { opacity: 0.7; transform: scale(1.2); }
+
+        /* Slide Counter */
+        .slide-counter {
+            position: fixed;
+            bottom: 24px;
+            right: 32px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-secondary);
+            z-index: 100;
+            letter-spacing: 2px;
+        }
+
+        /* Slides Container */
+        .slides-container {
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 80px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .slide.exit-up {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        /* Reveal animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .active .reveal { opacity: 1; transform: translateY(0); }
+        .active .reveal:nth-child(2) { transition-delay: 0.1s; }
+        .active .reveal:nth-child(3) { transition-delay: 0.2s; }
+        .active .reveal:nth-child(4) { transition-delay: 0.3s; }
+        .active .reveal:nth-child(5) { transition-delay: 0.4s; }
+        .active .reveal:nth-child(6) { transition-delay: 0.5s; }
+        .active .reveal:nth-child(7) { transition-delay: 0.6s; }
+        .active .reveal:nth-child(8) { transition-delay: 0.7s; }
+        .active .reveal:nth-child(9) { transition-delay: 0.8s; }
+        .active .reveal:nth-child(10) { transition-delay: 0.9s; }
+
+        /* Typography */
+        h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+        h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+        h3 { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 500; color: var(--text-secondary); }
+
+        p, li {
+            font-size: clamp(1rem, 1.5vw, 1.25rem);
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .mono { font-family: var(--font-mono); font-size: 0.85em; }
+
+        /* Accent text */
+        .accent-blue { color: var(--accent-blue); }
+        .accent-cyan { color: var(--accent-cyan); }
+        .accent-green { color: var(--accent-green); }
+        .accent-orange { color: var(--accent-orange); }
+        .accent-purple { color: var(--accent-purple); }
+        .accent-pink { color: var(--accent-pink); }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-text-warm {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-text-green {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Tag / Badge */
+        .tag {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .tag-blue { background: rgba(67,97,238,0.15); color: var(--accent-blue); border: 1px solid rgba(67,97,238,0.3); }
+        .tag-cyan { background: rgba(0,212,255,0.1); color: var(--accent-cyan); border: 1px solid rgba(0,212,255,0.25); }
+        .tag-green { background: rgba(0,255,136,0.1); color: var(--accent-green); border: 1px solid rgba(0,255,136,0.25); }
+        .tag-orange { background: rgba(255,107,53,0.1); color: var(--accent-orange); border: 1px solid rgba(255,107,53,0.25); }
+        .tag-purple { background: rgba(168,85,247,0.1); color: var(--accent-purple); border: 1px solid rgba(168,85,247,0.25); }
+        .tag-pink { background: rgba(255,45,117,0.1); color: var(--accent-pink); border: 1px solid rgba(255,45,117,0.25); }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255,255,255,0.12);
+            transform: translateY(-2px);
+        }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+
+        /* Code blocks */
+        .code-block {
+            background: #0d0d14;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 20px 24px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-block .comment { color: #555570; }
+        .code-block .keyword { color: var(--accent-purple); }
+        .code-block .string { color: var(--accent-green); }
+        .code-block .function { color: var(--accent-cyan); }
+
+        /* Level indicator */
+        .level-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .level-num {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .level-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .level-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-left: 40px;
+            margin-bottom: 12px;
+        }
+
+        /* Comparison table */
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .compare-table th {
+            text-align: left;
+            padding: 10px 16px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .compare-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-secondary);
+        }
+
+        .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* Spacer */
+        .spacer-sm { height: 12px; }
+        .spacer-md { height: 24px; }
+        .spacer-lg { height: 40px; }
+
+        /* Split layout */
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        /* List styling */
+        .clean-list { list-style: none; padding: 0; }
+        .clean-list li {
+            padding: 8px 0 8px 24px;
+            position: relative;
+            font-size: 1.05rem;
+        }
+        .clean-list li::before {
+            content: '›';
+            position: absolute;
+            left: 0;
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        /* Big number */
+        .big-number {
+            font-size: clamp(4rem, 10vw, 8rem);
+            font-weight: 700;
+            line-height: 1;
+            opacity: 0.08;
+            position: absolute;
+            right: 80px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: var(--font-mono);
+        }
+
+        /* Section divider */
+        .section-slide {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .section-slide h1 {
+            font-size: clamp(3rem, 6vw, 5rem);
+        }
+
+        /* Background effects */
+        .bg-grid {
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .bg-glow::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .glow-blue::after { background: var(--accent-blue); right: -100px; top: -100px; }
+        .glow-cyan::after { background: var(--accent-cyan); left: -100px; bottom: -100px; }
+        .glow-green::after { background: var(--accent-green); right: -50px; bottom: -50px; }
+        .glow-purple::after { background: var(--accent-purple); left: 20%; top: -80px; }
+        .glow-orange::after { background: var(--accent-orange); right: 10%; top: 10%; }
+
+        /* Keyboard hint */
+        .keyboard-hint {
+            position: fixed;
+            bottom: 24px;
+            left: 32px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.4;
+            z-index: 100;
+        }
+
+        kbd {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+        }
+
+        /* Highlight strip */
+        .highlight-strip {
+            background: linear-gradient(90deg, rgba(67,97,238,0.1), transparent);
+            border-left: 3px solid var(--accent-blue);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 8px 0;
+        }
+
+        /* Step list */
+        .step-list { list-style: none; padding: 0; counter-reset: step; }
+        .step-list li {
+            counter-increment: step;
+            padding: 10px 0 10px 48px;
+            position: relative;
+            font-size: 1rem;
+        }
+        .step-list li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            width: 32px;
+            height: 32px;
+            background: rgba(67,97,238,0.15);
+            border: 1px solid rgba(67,97,238,0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        /* Emoji icon wrapper */
+        .icon-wrap {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+
+        /* Flow arrow */
+        .flow-arrow {
+            text-align: center;
+            color: var(--text-secondary);
+            opacity: 0.3;
+            font-size: 1.5rem;
+            margin: 4px 0;
+        }
+
+        /* Pill inline */
+        .pill {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-family: var(--font-mono);
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* Alert box */
+        .alert {
+            background: rgba(255,45,117,0.08);
+            border: 1px solid rgba(255,45,117,0.2);
+            border-radius: 10px;
+            padding: 16px 20px;
+            font-size: 0.9rem;
+        }
+
+        .alert-green {
+            background: rgba(0,255,136,0.06);
+            border-color: rgba(0,255,136,0.2);
+        }
+
+        /* Two-col content */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+
+        /* Timeline */
+        .timeline-item {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0;
+            border-left: 2px solid rgba(255,255,255,0.06);
+            padding-left: 20px;
+            margin-left: 12px;
+            position: relative;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 18px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+    <nav class="nav-dots" id="navDots"></nav>
+    <div class="slide-counter" id="slideCounter"></div>
+    <div class="keyboard-hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> para navegar</div>
+
+    <div class="slides-container" id="slidesContainer">
+
+        <!-- ====== SLIDE 1: TITLE ====== -->
+        <section class="slide section-slide bg-glow glow-blue bg-grid">
+            <span class="tag tag-cyan reveal">SANA &middot; Marzo 2026</span>
+            <h1 class="reveal" style="margin-bottom: 16px;">IA & Mejores Pr&aacute;cticas<br><span class="gradient-text">para tu D&iacute;a a D&iacute;a</span></h1>
+            <h3 class="reveal" style="max-width: 600px; margin: 0 auto;">De usar Copilot a orquestar agentes.<br>Una gu&iacute;a pr&aacute;ctica para el equipo.</h3>
+        </section>
+
+        <!-- ====== SLIDE 2: AGENDA ====== -->
+        <section class="slide bg-glow glow-purple">
+            <span class="tag tag-purple reveal">Agenda</span>
+            <h2 class="reveal">Qu&eacute; vamos a cubrir</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-3 reveal">
+                <div class="card">
+                    <div class="icon-wrap">&#x1F4CA;</div>
+                    <strong class="accent-cyan">Los 8 Niveles</strong>
+                    <p style="font-size:0.85rem;">D&oacute;nde estamos y hacia d&oacute;nde vamos en adopci&oacute;n de IA</p>
+                </div>
+                <div class="card">
+                    <div class="icon-wrap">&#x2328;&#xFE0F;</div>
+                    <strong class="accent-orange">Cursor Pro Tips</strong>
+                    <p style="font-size:0.85rem;">Rules, contexto, y workflows que ya deber&iacute;an estar usando</p>
+                </div>
+                <div class="card">
+                    <div class="icon-wrap">&#x1F916;</div>
+                    <strong class="accent-green">Claude Code Deep Dive</strong>
+                    <p style="font-size:0.85rem;">Skills, MCP, SubAgents &mdash; el toolkit completo</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 3: 8 LEVELS SECTION ====== -->
+        <section class="slide section-slide bg-glow glow-cyan">
+            <span class="tag tag-cyan reveal">Steve Yegge &middot; Pragmatic Engineer</span>
+            <h1 class="gradient-text reveal">Los 8 Niveles<br>de Adopci&oacute;n de IA</h1>
+            <h3 class="reveal">&iquest;En qu&eacute; nivel est&aacute;s?</h3>
+        </section>
+
+        <!-- ====== SLIDE 4: LEVELS 1-4 ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-cyan reveal">Niveles 1&ndash;4</span>
+            <h2 class="reveal">Del cero al autocomplete</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-2 reveal">
+                <div>
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(255,255,255,0.05);color:var(--text-secondary);">1</span>
+                        <span class="level-title">Sin IA</span>
+                    </div>
+                    <p class="level-desc">Cero herramientas de IA. Escribiendo todo a mano.</p>
+
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(67,97,238,0.15);color:var(--accent-blue);">2</span>
+                        <span class="level-title">Agente en IDE + Permisos</span>
+                    </div>
+                    <p class="level-desc">Cursor/Copilot integrado. Permisos activados, revis&aacute;s todo.</p>
+                </div>
+                <div>
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(0,212,255,0.15);color:var(--accent-cyan);">3</span>
+                        <span class="level-title">Modo YOLO</span>
+                    </div>
+                    <p class="level-desc">Confianza creciente. Menos restricciones, dej&aacute;s que el agente haga m&aacute;s.</p>
+
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(0,255,136,0.15);color:var(--accent-green);">4</span>
+                        <span class="level-title">Menos Code Review</span>
+                    </div>
+                    <p class="level-desc">Ya no mir&aacute;s cada diff. Te enfoc&aacute;s en <em>qu&eacute;</em> hace el agente, no en el c&oacute;digo l&iacute;nea por l&iacute;nea.</p>
+                </div>
+            </div>
+            <div class="spacer-sm"></div>
+            <div class="highlight-strip reveal" style="font-size:0.9rem;">
+                <strong class="accent-cyan">La mayor&iacute;a de equipos est&aacute;n entre nivel 2 y 3.</strong> El salto a nivel 4 requiere buenas rules y contexto.
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 5: LEVELS 5-8 ====== -->
+        <section class="slide bg-grid bg-glow glow-green">
+            <span class="tag tag-green reveal">Niveles 5&ndash;8</span>
+            <h2 class="reveal">Del agente &uacute;nico al orquestador</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-2 reveal">
+                <div>
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(168,85,247,0.15);color:var(--accent-purple);">5</span>
+                        <span class="level-title">Agent-First</span>
+                    </div>
+                    <p class="level-desc">El agente lidera. Vos mir&aacute;s el c&oacute;digo despu&eacute;s, no durante.</p>
+
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">6</span>
+                        <span class="level-title">M&uacute;ltiples Agentes</span>
+                    </div>
+                    <p class="level-desc">Varios agentes en paralelo. Multiplexing entre terminales y chats.</p>
+                </div>
+                <div>
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(255,45,117,0.15);color:var(--accent-pink);">7</span>
+                        <span class="level-title">Orquestaci&oacute;n Manual</span>
+                    </div>
+                    <p class="level-desc">10+ agentes. Coordinaci&oacute;n a mano = caos. &ldquo;Le mand&eacute; el mensaje al agente equivocado&rdquo;.</p>
+
+                    <div class="level-bar">
+                        <span class="level-num" style="background:rgba(0,212,255,0.15);color:var(--accent-cyan);">8</span>
+                        <span class="level-title">Orquestador Custom</span>
+                    </div>
+                    <p class="level-desc">Construiste tu propia infraestructura para coordinar agentes.</p>
+                </div>
+            </div>
+            <div class="spacer-sm"></div>
+            <div class="alert alert-green reveal" style="font-size:0.9rem;">
+                <strong>Meta realista para SANA:</strong> Llegar a <strong>nivel 5&ndash;6</strong> con las herramientas correctas, rules s&oacute;lidas, y Claude Code + Cursor bien configurados.
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 6: SECTION CURSOR ====== -->
+        <section class="slide section-slide bg-glow glow-orange">
+            <span class="tag tag-orange reveal">Herramientas</span>
+            <h1 class="gradient-text-warm reveal">Cursor<br>Lo Esencial</h1>
+            <h3 class="reveal">Lo que tienen que saber s&iacute; o s&iacute;</h3>
+        </section>
+
+        <!-- ====== SLIDE 7: CURSOR FUNDAMENTALS ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-orange reveal">Cursor</span>
+            <h2 class="reveal">Fundamentos que cambian todo</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-2 reveal">
+                <div>
+                    <ul class="clean-list">
+                        <li><strong class="accent-orange">Contexto es rey.</strong> Cursor solo es tan bueno como el contexto que le das.</li>
+                        <li><strong class="accent-orange">@file, @folder, @web</strong> &mdash; Referenci&aacute; archivos espec&iacute;ficos en el chat siempre.</li>
+                        <li><strong class="accent-orange">Composer &gt; Chat</strong> para cambios multi-archivo. Chat para preguntas.</li>
+                        <li><strong class="accent-orange">Cmd+K</strong> para edici&oacute;n inline r&aacute;pida en el archivo actual.</li>
+                    </ul>
+                </div>
+                <div>
+                    <ul class="clean-list">
+                        <li><strong class="accent-cyan">Codebase indexing</strong> &mdash; Asegurense que est&eacute; activado en Settings.</li>
+                        <li><strong class="accent-cyan">.cursorignore</strong> &mdash; Excluyan node_modules, builds, y archivos grandes.</li>
+                        <li><strong class="accent-cyan">Modelo correcto</strong> &mdash; Claude Sonnet 4 para speed, Opus para complejidad.</li>
+                        <li><strong class="accent-cyan">Atajos clave:</strong> <kbd>Cmd+L</kbd> chat, <kbd>Cmd+I</kbd> composer, <kbd>Cmd+K</kbd> inline.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 8: CURSOR RULES ====== -->
+        <section class="slide bg-glow glow-orange">
+            <span class="tag tag-orange reveal">Cursor Rules</span>
+            <h2 class="reveal">C&oacute;mo crear sus propias rules</h2>
+            <div class="spacer-sm"></div>
+            <div class="split reveal">
+                <div>
+                    <p style="margin-bottom:16px;">Las rules le dicen a Cursor <strong>c&oacute;mo</strong> debe trabajar en su proyecto.</p>
+                    <div class="code-block" style="font-size:0.78rem;">
+<span class="comment"># .cursor/rules/api-standards.mdc</span>
+<span class="keyword">---</span>
+<span class="function">description</span>: <span class="string">"REST API guidelines"</span>
+<span class="function">globs</span>: <span class="string">"src/api/**/*.ts"</span>
+<span class="function">alwaysApply</span>: <span class="keyword">false</span>
+<span class="keyword">---</span>
+
+<span class="comment"># API Rules</span>
+- Usar JSON response: { data, error, meta }
+- Status codes correctos (201, 204, etc)
+- Validar input con zod
+- Loguear errores con request context
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;">Estructura recomendada</h3>
+                    <div class="code-block" style="font-size:0.78rem;">
+<span class="function">.cursor/</span>
+  <span class="function">rules/</span>
+    <span class="string">base.mdc</span>        <span class="comment"># Siempre activa</span>
+    <span class="string">react.mdc</span>       <span class="comment"># Para .tsx</span>
+    <span class="string">api.mdc</span>         <span class="comment"># Para src/api/</span>
+    <span class="string">testing.mdc</span>     <span class="comment"># Para *.test.*</span>
+                    </div>
+                    <div class="spacer-sm"></div>
+                    <div class="highlight-strip" style="font-size:0.85rem;">
+                        <strong>Tip:</strong> <span class="mono">/create-rule</span> en Cursor genera rules autom&aacute;ticamente.
+                    </div>
+                    <div class="spacer-sm"></div>
+                    <p style="font-size:0.85rem;"><strong class="accent-orange">3 modos:</strong> Always Apply, Apply to Files (globs), Apply Intelligently (description).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 9: CURSOR RULES BEST PRACTICES ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-orange reveal">Cursor</span>
+            <h2 class="reveal">Best practices para rules</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-2 reveal">
+                <div class="card" style="border-color: rgba(0,255,136,0.2);">
+                    <strong class="accent-green" style="font-size:1.1rem;">DO</strong>
+                    <div class="spacer-sm"></div>
+                    <ul class="clean-list" style="font-size:0.9rem;">
+                        <li>Una preocupaci&oacute;n por archivo de rule</li>
+                        <li>Menos de 500 l&iacute;neas por rule</li>
+                        <li>Instrucciones concretas y verificables</li>
+                        <li>Globs espec&iacute;ficos, no gen&eacute;ricos</li>
+                        <li>Referenciar archivos del proyecto real</li>
+                    </ul>
+                </div>
+                <div class="card" style="border-color: rgba(255,45,117,0.2);">
+                    <strong class="accent-pink" style="font-size:1.1rem;">DON'T</strong>
+                    <div class="spacer-sm"></div>
+                    <ul class="clean-list" style="font-size:0.9rem;">
+                        <li>Duplicar lo que hace el linter</li>
+                        <li>Copiar c&oacute;digo entero en la rule</li>
+                        <li>Rules vagas como &ldquo;escribi buen c&oacute;digo&rdquo;</li>
+                        <li>Un solo archivo gigante para todo</li>
+                        <li>Olvidarse de revisar si siguen siendo v&aacute;lidas</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="spacer-sm"></div>
+            <div class="alert reveal" style="font-size:0.85rem;">
+                <strong>Acci&oacute;n inmediata:</strong> Cada proyecto de SANA deber&iacute;a tener <span class="mono">.cursor/rules/base.mdc</span> con el stack, convenciones y comandos principales.
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 10: SECTION CLAUDE CODE ====== -->
+        <section class="slide section-slide bg-glow glow-blue">
+            <span class="tag tag-blue reveal">Deep Dive</span>
+            <h1 class="gradient-text reveal">Claude Code</h1>
+            <h3 class="reveal">El CLI que piensa como un dev senior</h3>
+        </section>
+
+        <!-- ====== SLIDE 11: CLAUDE.MD ====== -->
+        <section class="slide bg-grid bg-glow glow-blue">
+            <span class="tag tag-blue reveal">Claude Code</span>
+            <h2 class="reveal">CLAUDE.md &mdash; Tu copiloto configurado</h2>
+            <div class="spacer-sm"></div>
+            <div class="split reveal">
+                <div>
+                    <p style="margin-bottom:16px;">El equivalente a Cursor Rules pero para Claude Code. Se carga <strong>autom&aacute;ticamente</strong> en cada sesi&oacute;n.</p>
+                    <div class="code-block" style="font-size:0.78rem;">
+<span class="comment"># CLAUDE.md</span>
+
+<span class="comment">## Stack</span>
+Next.js 15, TypeScript, Prisma, tRPC
+
+<span class="comment">## Comandos</span>
+- <span class="string">npm run dev</span> &mdash; servidor local
+- <span class="string">npm test</span> &mdash; correr tests
+- <span class="string">npm run lint</span> &mdash; lint + format
+
+<span class="comment">## Convenciones</span>
+- 2-space indent
+- Functional components con hooks
+- API handlers en src/api/handlers/
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;">D&oacute;nde viven</h3>
+                    <div class="code-block" style="font-size:0.78rem;">
+<span class="comment"># Proyecto (compartido via git)</span>
+<span class="string">./CLAUDE.md</span>
+<span class="string">./.claude/CLAUDE.md</span>
+
+<span class="comment"># Personal (todos tus proyectos)</span>
+<span class="string">~/.claude/CLAUDE.md</span>
+
+<span class="comment"># Local (solo vos, no git)</span>
+<span class="string">./CLAUDE.local.md</span>
+
+<span class="comment"># Rules modulares</span>
+<span class="string">.claude/rules/</span>
+  <span class="string">code-style.md</span>
+  <span class="string">testing.md</span>
+  <span class="string">security.md</span>
+                    </div>
+                    <div class="spacer-sm"></div>
+                    <p style="font-size:0.85rem;"><strong class="accent-blue">Tip:</strong> <span class="mono">/init</span> genera un CLAUDE.md analizando tu codebase.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 12: RULES DIRECTORY ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-blue reveal">Claude Code</span>
+            <h2 class="reveal">Rules con path-scoping</h2>
+            <div class="spacer-md"></div>
+            <div class="split reveal">
+                <div>
+                    <p style="margin-bottom:16px;">Igual que las globs de Cursor, pod&eacute;s tener rules que solo aplican a ciertos archivos.</p>
+                    <div class="code-block" style="font-size:0.78rem;">
+<span class="comment"># .claude/rules/api-rules.md</span>
+<span class="keyword">---</span>
+<span class="function">paths</span>:
+  - <span class="string">"src/api/**/*.ts"</span>
+<span class="keyword">---</span>
+
+<span class="comment"># API Development Rules</span>
+- Validar input con zod
+- Usar formato est&aacute;ndar de error
+- Documentar con OpenAPI comments
+- Loguear errores con request ID
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;">Comparaci&oacute;n r&aacute;pida</h3>
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Cursor</th>
+                                <th>Claude Code</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Instrucciones</td>
+                                <td><span class="pill">.cursor/rules/</span></td>
+                                <td><span class="pill">CLAUDE.md</span></td>
+                            </tr>
+                            <tr>
+                                <td>Rules modulares</td>
+                                <td><span class="pill">*.mdc</span></td>
+                                <td><span class="pill">.claude/rules/</span></td>
+                            </tr>
+                            <tr>
+                                <td>File scoping</td>
+                                <td><span class="pill">globs:</span></td>
+                                <td><span class="pill">paths:</span></td>
+                            </tr>
+                            <tr>
+                                <td>Auto-generate</td>
+                                <td><span class="pill">/create-rule</span></td>
+                                <td><span class="pill">/init</span></td>
+                            </tr>
+                            <tr>
+                                <td>Imports</td>
+                                <td>No</td>
+                                <td><span class="pill">@path/to/file</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 13: SECTION SKILLS ====== -->
+        <section class="slide section-slide bg-glow glow-green">
+            <span class="tag tag-green reveal">Claude Code</span>
+            <h1 class="gradient-text-green reveal">Skills</h1>
+            <h3 class="reveal">Workflows reutilizables como comandos</h3>
+        </section>
+
+        <!-- ====== SLIDE 14: SKILLS DEEP DIVE ====== -->
+        <section class="slide bg-grid bg-glow glow-green">
+            <span class="tag tag-green reveal">Skills</span>
+            <h2 class="reveal">Extend&eacute; Claude con Skills custom</h2>
+            <div class="spacer-sm"></div>
+            <div class="split reveal">
+                <div>
+                    <p style="margin-bottom:16px;">Un Skill = un <span class="mono">SKILL.md</span> con instrucciones que Claude ejecuta autom&aacute;ticamente o via <span class="mono">/nombre</span>.</p>
+                    <div class="code-block" style="font-size:0.75rem;">
+<span class="comment"># .claude/skills/deploy/SKILL.md</span>
+<span class="keyword">---</span>
+<span class="function">name</span>: <span class="string">deploy</span>
+<span class="function">description</span>: <span class="string">Deploy to staging/prod</span>
+<span class="function">allowed-tools</span>: <span class="string">Bash, Read</span>
+<span class="keyword">---</span>
+
+<span class="comment">## Steps</span>
+1. Run <span class="string">npm test</span>
+2. Run <span class="string">npm run build</span>
+3. Ask which environment (staging/prod)
+4. Execute deploy script
+5. Verify health check
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;">Skills que vienen built-in</h3>
+                    <ul class="clean-list" style="font-size:0.9rem;">
+                        <li><span class="mono accent-green">/simplify</span> &mdash; Review de calidad y eficiencia</li>
+                        <li><span class="mono accent-green">/batch</span> &mdash; Cambios masivos en paralelo</li>
+                        <li><span class="mono accent-green">/debug</span> &mdash; Troubleshoot la sesi&oacute;n actual</li>
+                        <li><span class="mono accent-green">/loop</span> &mdash; Ejecutar algo en schedule</li>
+                    </ul>
+                    <div class="spacer-md"></div>
+                    <h3 style="margin-bottom:12px;">D&oacute;nde crearlas</h3>
+                    <div class="code-block" style="font-size:0.78rem;">
+<span class="comment"># Personal (todos los proyectos)</span>
+<span class="string">~/.claude/skills/mi-skill/SKILL.md</span>
+
+<span class="comment"># Proyecto (compartido con el equipo)</span>
+<span class="string">.claude/skills/mi-skill/SKILL.md</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 15: SKILL FEATURES ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-green reveal">Skills</span>
+            <h2 class="reveal">Features avanzadas de Skills</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-3 reveal">
+                <div class="card">
+                    <strong class="accent-cyan">Variables</strong>
+                    <div class="spacer-sm"></div>
+                    <div class="code-block" style="font-size:0.72rem; padding:12px;">
+<span class="function">$ARGUMENTS</span> <span class="comment"># todo lo que pas&aacute;s</span>
+<span class="function">$1</span> <span class="comment"># primer argumento</span>
+<span class="function">${CLAUDE_SKILL_DIR}</span>
+<span class="function">${CLAUDE_SESSION_ID}</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <strong class="accent-orange">Contexto Din&aacute;mico</strong>
+                    <div class="spacer-sm"></div>
+                    <div class="code-block" style="font-size:0.72rem; padding:12px;">
+<span class="comment"># Inyectar output de comandos</span>
+PR diff: <span class="function">!`gh pr diff`</span>
+Branch: <span class="function">!`git branch`</span>
+Tests: <span class="function">!`npm test 2>&1`</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <strong class="accent-purple">Control de Invocaci&oacute;n</strong>
+                    <div class="spacer-sm"></div>
+                    <p style="font-size:0.78rem;">
+                        <span class="mono">user-invocable: false</span><br>
+                        &rarr; Solo Claude lo activa<br><br>
+                        <span class="mono">disable-model-invocation: true</span><br>
+                        &rarr; Solo el usuario lo activa<br><br>
+                        <span class="mono">context: fork</span><br>
+                        &rarr; Corre en subagent aislado
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 16: SECTION MCP ====== -->
+        <section class="slide section-slide bg-glow glow-purple">
+            <span class="tag tag-purple reveal">Claude Code</span>
+            <h1 class="reveal">MCP<br><span class="accent-purple">Model Context Protocol</span></h1>
+            <h3 class="reveal">Conect&aacute; Claude al mundo exterior</h3>
+        </section>
+
+        <!-- ====== SLIDE 17: MCP EXPLAINED ====== -->
+        <section class="slide bg-grid bg-glow glow-purple">
+            <span class="tag tag-purple reveal">MCP</span>
+            <h2 class="reveal">&iquest;Qu&eacute; es MCP?</h2>
+            <div class="spacer-sm"></div>
+            <div class="split reveal">
+                <div>
+                    <p style="margin-bottom:16px;">Un est&aacute;ndar abierto que conecta a Claude con <strong>herramientas externas</strong>: bases de datos, APIs, issue trackers, dise&ntilde;o, y m&aacute;s.</p>
+                    <div class="spacer-sm"></div>
+                    <h3 style="margin-bottom:12px;">Servidores populares</h3>
+                    <ul class="clean-list" style="font-size:0.9rem;">
+                        <li><span class="accent-purple">GitHub</span> &mdash; PRs, issues, code search</li>
+                        <li><span class="accent-purple">Notion</span> &mdash; Docs, bases de datos</li>
+                        <li><span class="accent-purple">Sentry</span> &mdash; Errores en producci&oacute;n</li>
+                        <li><span class="accent-purple">PostgreSQL</span> &mdash; Queries directos</li>
+                        <li><span class="accent-purple">Linear</span> &mdash; Issues y projects</li>
+                        <li><span class="accent-purple">Figma</span> &mdash; Dise&ntilde;os a c&oacute;digo</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;">C&oacute;mo agregar un server</h3>
+                    <div class="code-block" style="font-size:0.72rem;">
+<span class="comment"># HTTP (remoto, recomendado)</span>
+<span class="function">claude mcp add</span> <span class="keyword">--transport</span> http \
+  github https://api.githubcopilot.com/mcp/
+
+<span class="comment"># Stdio (local)</span>
+<span class="function">claude mcp add</span> <span class="keyword">--transport</span> stdio \
+  <span class="keyword">--env</span> DB_URL=postgresql://... \
+  db <span class="keyword">--</span> npx -y @bytebase/dbhub
+
+<span class="comment"># Ver estado</span>
+<span class="function">/mcp</span> <span class="comment"># dentro de Claude Code</span>
+                    </div>
+                    <div class="spacer-sm"></div>
+                    <div class="highlight-strip" style="font-size:0.82rem; border-color:var(--accent-purple);">
+                        <strong>Scopes:</strong> <span class="mono">local</span> (default, personal), <span class="mono">project</span> (.mcp.json, compartido), <span class="mono">user</span> (global).
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 18: MCP PRACTICAL ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-purple reveal">MCP</span>
+            <h2 class="reveal">MCP en la pr&aacute;ctica para SANA</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-2 reveal">
+                <div class="card">
+                    <strong class="accent-purple">Proyecto compartido (.mcp.json)</strong>
+                    <div class="spacer-sm"></div>
+                    <div class="code-block" style="font-size:0.72rem; padding:14px;">
+{
+  <span class="string">"mcpServers"</span>: {
+    <span class="string">"github"</span>: {
+      <span class="string">"type"</span>: <span class="string">"http"</span>,
+      <span class="string">"url"</span>: <span class="string">"https://api.githubcopilot.com/mcp/"</span>
+    },
+    <span class="string">"sentry"</span>: {
+      <span class="string">"type"</span>: <span class="string">"http"</span>,
+      <span class="string">"url"</span>: <span class="string">"https://mcp.sentry.dev/mcp"</span>
+    }
+  }
+}
+                    </div>
+                </div>
+                <div class="card">
+                    <strong class="accent-cyan">Casos de uso</strong>
+                    <div class="spacer-sm"></div>
+                    <ul class="clean-list" style="font-size:0.85rem;">
+                        <li>&ldquo;Mir&aacute; los errores de Sentry de las &uacute;ltimas 24h y propon&eacute; fixes&rdquo;</li>
+                        <li>&ldquo;Cre&aacute; un PR con los cambios que hicimos&rdquo;</li>
+                        <li>&ldquo;Trae el dise&ntilde;o de Figma y implement&aacute; el componente&rdquo;</li>
+                        <li>&ldquo;Query la tabla de usuarios con m&aacute;s de 30 d&iacute;as sin login&rdquo;</li>
+                        <li>&ldquo;Actualiz&aacute; el doc en Notion con el nuevo endpoint&rdquo;</li>
+                    </ul>
+                    <div class="spacer-sm"></div>
+                    <p style="font-size:0.82rem; color:var(--text-secondary);">MCP tambi&eacute;n funciona en Cursor. Es un est&aacute;ndar compartido.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 19: SECTION SUBAGENTS ====== -->
+        <section class="slide section-slide bg-glow glow-cyan">
+            <span class="tag tag-cyan reveal">Claude Code</span>
+            <h1 class="gradient-text reveal">SubAgents</h1>
+            <h3 class="reveal">Trabajo en paralelo con agentes especializados</h3>
+        </section>
+
+        <!-- ====== SLIDE 20: SUBAGENTS EXPLAINED ====== -->
+        <section class="slide bg-grid bg-glow glow-cyan">
+            <span class="tag tag-cyan reveal">SubAgents</span>
+            <h2 class="reveal">Agentes especializados a tu servicio</h2>
+            <div class="spacer-sm"></div>
+            <div class="grid-3 reveal">
+                <div class="card" style="border-color:rgba(0,212,255,0.2);">
+                    <strong class="accent-cyan">Explore</strong>
+                    <p style="font-size:0.8rem; margin-top:8px;">Modelo r&aacute;pido (Haiku). Solo lee archivos. Ideal para descubrir c&oacute;digo y buscar en el codebase.</p>
+                </div>
+                <div class="card" style="border-color:rgba(67,97,238,0.2);">
+                    <strong class="accent-blue">Plan</strong>
+                    <p style="font-size:0.8rem; margin-top:8px;">Solo lectura. Investiga el codebase durante el modo plan para dise&ntilde;ar una estrategia.</p>
+                </div>
+                <div class="card" style="border-color:rgba(0,255,136,0.2);">
+                    <strong class="accent-green">General-Purpose</strong>
+                    <p style="font-size:0.8rem; margin-top:8px;">Acceso a todas las herramientas. Para tareas complejas multi-paso.</p>
+                </div>
+            </div>
+            <div class="spacer-md"></div>
+            <div class="highlight-strip reveal" style="font-size:0.9rem;">
+                <strong>Key insight:</strong> Los subagents corren en su propio contexto &rarr; no contaminan tu conversaci&oacute;n principal. Pod&eacute;s lanzar varios en paralelo.
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 21: CUSTOM SUBAGENTS ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-cyan reveal">SubAgents</span>
+            <h2 class="reveal">Cre&aacute; tus propios agentes</h2>
+            <div class="spacer-sm"></div>
+            <div class="split reveal">
+                <div>
+                    <div class="code-block" style="font-size:0.72rem;">
+<span class="comment"># .claude/agents/code-reviewer.md</span>
+<span class="keyword">---</span>
+<span class="function">name</span>: <span class="string">code-reviewer</span>
+<span class="function">description</span>: <span class="string">Expert code review</span>
+<span class="function">tools</span>: <span class="string">Read, Glob, Grep, Bash</span>
+<span class="function">model</span>: <span class="string">sonnet</span>
+<span class="keyword">---</span>
+
+You are a senior code reviewer.
+
+When invoked:
+1. Run <span class="string">git diff</span> to see changes
+2. Focus on modified files
+3. Check for:
+   - Code clarity
+   - Duplicated code
+   - Error handling
+   - Exposed secrets
+   - Test coverage
+
+Output: Critical &gt; Warnings &gt; Suggestions
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;">Configuraci&oacute;n avanzada</h3>
+                    <ul class="clean-list" style="font-size:0.88rem;">
+                        <li><span class="mono">model: haiku</span> &mdash; barato y r&aacute;pido para tareas simples</li>
+                        <li><span class="mono">model: opus</span> &mdash; m&aacute;xima capacidad para tareas complejas</li>
+                        <li><span class="mono">isolation: worktree</span> &mdash; git worktree aislado</li>
+                        <li><span class="mono">background: true</span> &mdash; siempre en background</li>
+                        <li><span class="mono">memory: project</span> &mdash; persiste conocimiento entre sesiones</li>
+                        <li><span class="mono">maxTurns: 10</span> &mdash; limitar rondas</li>
+                    </ul>
+                    <div class="spacer-md"></div>
+                    <h3 style="margin-bottom:12px;">D&oacute;nde guardarlos</h3>
+                    <div class="code-block" style="font-size:0.75rem; padding:14px;">
+<span class="string">~/.claude/agents/</span>     <span class="comment"># Personal</span>
+<span class="string">.claude/agents/</span>      <span class="comment"># Proyecto</span>
+                    </div>
+                    <p style="font-size:0.82rem; margin-top:8px;">Tip: <span class="mono">/agents</span> para ver y crear agentes.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 22: PARALLEL WORKFLOWS ====== -->
+        <section class="slide bg-grid bg-glow glow-green">
+            <span class="tag tag-green reveal">Workflows</span>
+            <h2 class="reveal">El poder del trabajo en paralelo</h2>
+            <div class="spacer-md"></div>
+            <div class="reveal">
+                <p style="margin-bottom:20px;">Esto es lo que separa nivel 3 de nivel 6. Aprend&eacute; a delegar.</p>
+                <div class="grid-2">
+                    <div class="card" style="border-color:rgba(255,45,117,0.2);">
+                        <strong class="accent-pink">Antes (secuencial)</strong>
+                        <div class="spacer-sm"></div>
+                        <ol class="step-list" style="font-size:0.82rem;">
+                            <li>Investigar el bug</li>
+                            <li>Entender el c&oacute;digo</li>
+                            <li>Escribir el fix</li>
+                            <li>Escribir tests</li>
+                            <li>Hacer el PR</li>
+                        </ol>
+                        <p style="font-size:0.75rem; margin-top:8px; opacity:0.5;">Todo en una sola conversaci&oacute;n</p>
+                    </div>
+                    <div class="card" style="border-color:rgba(0,255,136,0.2);">
+                        <strong class="accent-green">Ahora (paralelo)</strong>
+                        <div class="spacer-sm"></div>
+                        <div style="font-size:0.82rem;">
+                            <p><span class="accent-cyan">Agent 1:</span> Investiga y planea el fix</p>
+                            <p><span class="accent-cyan">Agent 2:</span> Revisa tests existentes</p>
+                            <p><span class="accent-cyan">Agent 3:</span> Busca patrones similares en el repo</p>
+                            <p style="margin-top:8px;"><span class="accent-green">T&uacute;:</span> Revis&aacute;s los resultados, implementas con contexto completo</p>
+                        </div>
+                        <p style="font-size:0.75rem; margin-top:8px; opacity:0.5;"><kbd>Ctrl+B</kbd> para mandar al background</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 23: FULL SETUP ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-blue reveal">Setup Completo</span>
+            <h2 class="reveal">Estructura ideal para un proyecto SANA</h2>
+            <div class="spacer-md"></div>
+            <div class="split reveal">
+                <div>
+                    <h3 style="margin-bottom:12px;">Claude Code</h3>
+                    <div class="code-block" style="font-size:0.72rem;">
+<span class="function">proyecto/</span>
+  <span class="string">CLAUDE.md</span>             <span class="comment"># Stack, comandos, reglas</span>
+  <span class="string">.mcp.json</span>             <span class="comment"># Servidores MCP</span>
+  <span class="function">.claude/</span>
+    <span class="function">rules/</span>
+      <span class="string">api.md</span>            <span class="comment"># paths: src/api/**</span>
+      <span class="string">frontend.md</span>       <span class="comment"># paths: src/components/**</span>
+    <span class="function">skills/</span>
+      <span class="function">deploy/</span>
+        <span class="string">SKILL.md</span>        <span class="comment"># /deploy workflow</span>
+      <span class="function">pr-review/</span>
+        <span class="string">SKILL.md</span>        <span class="comment"># /pr-review workflow</span>
+    <span class="function">agents/</span>
+      <span class="string">reviewer.md</span>       <span class="comment"># Code review agent</span>
+      <span class="string">tester.md</span>         <span class="comment"># Test writer agent</span>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;">Cursor</h3>
+                    <div class="code-block" style="font-size:0.72rem;">
+<span class="function">proyecto/</span>
+  <span class="string">.cursorignore</span>         <span class="comment"># Excluir archivos</span>
+  <span class="function">.cursor/</span>
+    <span class="function">rules/</span>
+      <span class="string">base.mdc</span>          <span class="comment"># alwaysApply: true</span>
+      <span class="string">api.mdc</span>           <span class="comment"># globs: src/api/**</span>
+      <span class="string">react.mdc</span>         <span class="comment"># globs: **/*.tsx</span>
+      <span class="string">testing.mdc</span>       <span class="comment"># globs: **/*.test.*</span>
+                    </div>
+                    <div class="spacer-md"></div>
+                    <div class="alert alert-green" style="font-size:0.82rem;">
+                        <strong>Ambas herramientas pueden convivir</strong> en el mismo repo. Las rules son complementarias.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 24: QUICK WINS ====== -->
+        <section class="slide bg-grid bg-glow glow-orange">
+            <span class="tag tag-orange reveal">Acci&oacute;n</span>
+            <h2 class="reveal">Quick Wins &mdash; Empezar hoy</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-2 reveal">
+                <div>
+                    <h3 style="margin-bottom:12px;" class="accent-orange">Esta semana</h3>
+                    <ol class="step-list" style="font-size:0.9rem;">
+                        <li>Crear <span class="mono">.cursor/rules/base.mdc</span> en cada proyecto activo</li>
+                        <li>Agregar <span class="mono">CLAUDE.md</span> con stack, comandos y convenciones</li>
+                        <li>Configurar <span class="mono">.cursorignore</span> para excluir ruido</li>
+                        <li>Probar Claude Code CLI: <span class="mono">npm i -g @anthropic-ai/claude-code</span></li>
+                    </ol>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:12px;" class="accent-cyan">Este mes</h3>
+                    <ol class="step-list" style="font-size:0.9rem;">
+                        <li>Crear 2-3 skills custom para workflows repetitivos</li>
+                        <li>Configurar MCP servers (GitHub, Sentry, DB)</li>
+                        <li>Crear un subagent de code review para el equipo</li>
+                        <li>Experimentar con trabajo paralelo (nivel 5-6)</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 25: TIPS & TRICKS ====== -->
+        <section class="slide bg-grid">
+            <span class="tag tag-cyan reveal">Pro Tips</span>
+            <h2 class="reveal">Tips que hacen la diferencia</h2>
+            <div class="spacer-md"></div>
+            <div class="grid-2 reveal">
+                <div class="card">
+                    <strong class="accent-cyan">Prompt Engineering B&aacute;sico</strong>
+                    <ul class="clean-list" style="font-size:0.85rem; margin-top:8px;">
+                        <li>Se espec&iacute;fico: &ldquo;us&aacute; zod para validar&rdquo; &gt; &ldquo;valid&aacute; el input&rdquo;</li>
+                        <li>D&aacute; contexto: &ldquo;en este archivo, la funci&oacute;n X hace Y&rdquo;</li>
+                        <li>Un paso a la vez para cambios grandes</li>
+                        <li>Peg&aacute; screenshots de errores, no los describas</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <strong class="accent-orange">Workflow Tips</strong>
+                    <ul class="clean-list" style="font-size:0.85rem; margin-top:8px;">
+                        <li>Plan mode primero, implementar despu&eacute;s</li>
+                        <li><span class="mono">/compact</span> cuando la conversaci&oacute;n se hace larga</li>
+                        <li>Commits peque&ntilde;os y frecuentes</li>
+                        <li>Nunca confiar ciegamente &mdash; revisar el output</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <strong class="accent-green">Claude Code Espec&iacute;ficos</strong>
+                    <ul class="clean-list" style="font-size:0.85rem; margin-top:8px;">
+                        <li><span class="mono">claude --resume</span> para continuar sesiones</li>
+                        <li><span class="mono">/memory</span> para auto-memoria persistente</li>
+                        <li><span class="mono">/init</span> para bootstrap de proyecto nuevo</li>
+                        <li>Multimodal: pegar im&aacute;genes directo en el CLI</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <strong class="accent-purple">Cursor Espec&iacute;ficos</strong>
+                    <ul class="clean-list" style="font-size:0.85rem; margin-top:8px;">
+                        <li>Usar @codebase para b&uacute;squedas amplias</li>
+                        <li>Composer para multi-archivo, Chat para preguntas</li>
+                        <li>AGENTS.md como alternativa simple a rules</li>
+                        <li>Verificar que codebase indexing est&eacute; ON</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 26: CLOSING ====== -->
+        <section class="slide section-slide bg-glow glow-blue">
+            <span class="tag tag-blue reveal">Cierre</span>
+            <h1 class="reveal" style="margin-bottom: 20px;">La IA no te reemplaza.<br><span class="gradient-text">Te multiplica.</span></h1>
+            <h3 class="reveal" style="max-width: 650px; margin: 0 auto;">Pero solo si le das el contexto correcto,<br>las rules adecuadas, y confi&aacute;s en el proceso.</h3>
+            <div class="spacer-lg"></div>
+            <div class="reveal" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                <span class="tag tag-cyan">Rules</span>
+                <span class="tag tag-green">Skills</span>
+                <span class="tag tag-purple">MCP</span>
+                <span class="tag tag-orange">SubAgents</span>
+                <span class="tag tag-blue">CLAUDE.md</span>
+                <span class="tag tag-pink">Cursor Rules</span>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.totalSlides = this.slides.length;
+                this.isAnimating = false;
+                this.touchStartY = 0;
+
+                this.createNavDots();
+                this.updateSlide();
+                this.bindEvents();
+            }
+
+            createNavDots() {
+                const nav = document.getElementById('navDots');
+                for (let i = 0; i < this.totalSlides; i++) {
+                    const dot = document.createElement('button');
+                    dot.className = 'nav-dot';
+                    dot.setAttribute('aria-label', `Slide ${i + 1}`);
+                    dot.addEventListener('click', () => this.goToSlide(i));
+                    nav.appendChild(dot);
+                }
+            }
+
+            updateSlide() {
+                this.slides.forEach((slide, index) => {
+                    slide.classList.remove('active', 'exit-up');
+                    if (index === this.currentSlide) {
+                        slide.classList.add('active');
+                    } else if (index < this.currentSlide) {
+                        slide.classList.add('exit-up');
+                    }
+                });
+
+                // Update progress bar
+                const progress = ((this.currentSlide + 1) / this.totalSlides) * 100;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+
+                // Update nav dots
+                document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+                    dot.classList.toggle('active', index === this.currentSlide);
+                });
+
+                // Update counter
+                document.getElementById('slideCounter').textContent =
+                    `${String(this.currentSlide + 1).padStart(2, '0')} / ${String(this.totalSlides).padStart(2, '0')}`;
+            }
+
+            goToSlide(index) {
+                if (this.isAnimating || index === this.currentSlide) return;
+                if (index < 0 || index >= this.totalSlides) return;
+
+                this.isAnimating = true;
+                this.currentSlide = index;
+                this.updateSlide();
+
+                setTimeout(() => { this.isAnimating = false; }, 600);
+            }
+
+            next() { this.goToSlide(this.currentSlide + 1); }
+            prev() { this.goToSlide(this.currentSlide - 1); }
+
+            bindEvents() {
+                // Keyboard
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowRight':
+                        case 'ArrowDown':
+                        case ' ':
+                        case 'PageDown':
+                            e.preventDefault();
+                            this.next();
+                            break;
+                        case 'ArrowLeft':
+                        case 'ArrowUp':
+                        case 'PageUp':
+                            e.preventDefault();
+                            this.prev();
+                            break;
+                        case 'Home':
+                            e.preventDefault();
+                            this.goToSlide(0);
+                            break;
+                        case 'End':
+                            e.preventDefault();
+                            this.goToSlide(this.totalSlides - 1);
+                            break;
+                    }
+                });
+
+                // Mouse wheel
+                let wheelTimeout;
+                document.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    clearTimeout(wheelTimeout);
+                    wheelTimeout = setTimeout(() => {
+                        if (e.deltaY > 0) this.next();
+                        else this.prev();
+                    }, 50);
+                }, { passive: false });
+
+                // Touch
+                document.addEventListener('touchstart', (e) => {
+                    this.touchStartY = e.touches[0].clientY;
+                }, { passive: true });
+
+                document.addEventListener('touchend', (e) => {
+                    const deltaY = this.touchStartY - e.changedTouches[0].clientY;
+                    if (Math.abs(deltaY) > 50) {
+                        if (deltaY > 0) this.next();
+                        else this.prev();
+                    }
+                }, { passive: true });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            new SlidePresentation();
+        });
+    </script>
+</body>
+</html>
